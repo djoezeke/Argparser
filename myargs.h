@@ -1,9 +1,32 @@
-#ifndef DJOEZEKE_MYARGS_H
-#define DJOEZEKE_MYARGS_H
 
-#include <stdio.h>  // for printf
-#include <stdlib.h> // for realloc
-#include <string.h> // for strdup strlen
+/**
+ * Example usage:
+ *
+ * int main(int argc, char *argv[]) {
+ *     ArgumentParser *parser = new_parser("my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
+ *     add_arg(parser, 'o', "output", 1, 1, "default_output.txt", "Output file");
+ *     add_kwarg(parser, 'v', "verbose", 0, "false", "Enable verbose mode");
+ *     add_flag(parser, 'h', "help", "Show help message");
+ *
+ *     parse_args(parser, argc, argv);
+ *
+ *     const char *output = get_arg(parser, "output");
+ *     const char *verbose = get_kwarg(parser, "verbose");
+ *     int help = get_flag(parser, "help");
+ *
+ *     if (help) {
+ *         print_help(parser, 1, 1, 1, 0);
+ *         free_parser(parser);
+ *         return 0;
+ *     }
+ *
+ *     printf("Output: %s\n", output);
+ *     printf("Verbose: %s\n", verbose);
+ *
+ *     free_parser(parser);
+ *     return 0;
+ * }
+ */
 
 // TODO : nargs
 // TODO : arg parsing without - or --
@@ -12,7 +35,36 @@
 // TODO : Documentation
 // TODO : Modify README
 
-#pragma region declarations
+#ifndef DJOEZEKE_MYARGS_H
+#define DJOEZEKE_MYARGS_H
+
+#include <stdio.h>  // for printf
+#include <stdlib.h> // for realloc
+#include <string.h> // for strdup strlen
+
+#define MYARGS_VERSION_MAJOR 0
+#define MYARGS_VERSION_MINOR 1
+#define MYARGS_VERSION_PATCH 0
+
+#ifdef MYARGS_DEBUG
+#endif // MYARGS_DEBUG
+#define MYARGS_THEME_HELP
+#ifdef MYARGS_THEME_HELP
+#define ST "\e[0;32m" // symbol
+#define NT "\e[0;30m" // name
+#define RT "\e[0;33m" // required
+#define DT "\e[0;33m" // default
+#define FT "\e[0;30m" // allowed
+#define FT "\e[0;30m" // implicit
+#define CC "\e[0;34m" // colon
+#define NC "\e[0;30m" // none
+#define HT "\e[0;30m" //
+#else
+#define TNAME(x)
+#define TIMEIT()
+#endif // MYARGS_THEME_HELP
+
+#pragma region STRUCTURES
 
 /**
  * Represents the type of an argument.
@@ -57,6 +109,10 @@ typedef struct
     Argument *arguments; /**< The list of arguments. */
 } ArgumentParser;
 
+#pragma endregion // STRUCTURES
+
+#pragma region DECLARATIONS
+
 /**
  * Creates a new ArgumentParser instance.
  *
@@ -70,7 +126,7 @@ typedef struct
  * Example usage:
  * ArgumentParser *parser = new_parser("my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
  */
-ArgumentParser *new_parser(char *program, char *usage, char *description, char *epilog, int add_help);
+ArgumentParser *new_parser(const char *program, const char *usage, const char *description, const char *epilog, int add_help);
 
 /**
  * Initializes an ArgumentParser instance.
@@ -86,7 +142,7 @@ ArgumentParser *new_parser(char *program, char *usage, char *description, char *
  * ArgumentParser parser;
  * init_parser(&parser, "my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
  */
-void init_parser(ArgumentParser *parser, char *program, char *usage, char *description, char *epilog, int add_help);
+void init_parser(ArgumentParser *parser, const char *program, const char *usage, const char *description, const char *epilog, int add_help);
 
 /**
  * Adds an argument to the argument parser.
@@ -195,6 +251,36 @@ int get_flag(ArgumentParser *parser, const char *name);
 void print_help(ArgumentParser *parser, int description, int usage, int epilog, int group);
 
 /**
+ * Prints the help message.
+ *
+ * @param parser The ArgumentParser instance.
+ *
+ * Example usage:
+ * print_flag_help(parser, 1, 1, 1, 0);
+ */
+void print_arg_help(ArgumentParser *parser, int i);
+
+/**
+ * Prints the help message.
+ *
+ * @param parser The ArgumentParser instance.
+ *
+ * Example usage:
+ * print_flag_help(parser, 1, 1, 1, 0);
+ */
+void print_flag_help(ArgumentParser *parser, int i);
+
+/**
+ * Prints the help message.
+ *
+ * @param parser The ArgumentParser instance.
+ *
+ * Example usage:
+ * print_flag_help(parser, 1, 1, 1, 0);
+ */
+void print_kwarg_help(ArgumentParser *parser, int i);
+
+/**
  * Frees the memory allocated for the ArgumentParser instance.
  *
  * @param parser The ArgumentParser instance.
@@ -204,40 +290,11 @@ void print_help(ArgumentParser *parser, int description, int usage, int epilog, 
  */
 void free_parser(ArgumentParser *parser);
 
-/**
- * Example usage:
- *
- * int main(int argc, char *argv[]) {
- *     ArgumentParser *parser = new_parser("my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
- *     add_arg(parser, 'o', "output", 1, 1, "default_output.txt", "Output file");
- *     add_kwarg(parser, 'v', "verbose", 0, "false", "Enable verbose mode");
- *     add_flag(parser, 'h', "help", "Show help message");
- *
- *     parse_args(parser, argc, argv);
- *
- *     const char *output = get_arg(parser, "output");
- *     const char *verbose = get_kwarg(parser, "verbose");
- *     int help = get_flag(parser, "help");
- *
- *     if (help) {
- *         print_help(parser, 1, 1, 1, 0);
- *         free_parser(parser);
- *         return 0;
- *     }
- *
- *     printf("Output: %s\n", output);
- *     printf("Verbose: %s\n", verbose);
- *
- *     free_parser(parser);
- *     return 0;
- * }
- */
+#pragma endregion // DECLARATIONS
 
-#pragma endregion // declarations
+#pragma region DEFINATIONS
 
-#pragma region definations
-
-void init_parser(ArgumentParser *parser, char *program, char *usage, char *description, char *epilog, int add_help)
+void init_parser(ArgumentParser *parser, const char *program, const char *usage, const char *description, const char *epilog, int add_help)
 {
     parser->program = strdup(program);
     parser->usage = strdup(usage);
@@ -251,7 +308,7 @@ void init_parser(ArgumentParser *parser, char *program, char *usage, char *descr
     }
 }
 
-ArgumentParser *new_parser(char *program, char *usage, char *description, char *epilog, int add_help)
+ArgumentParser *new_parser(const char *program, const char *usage, const char *description, const char *epilog, int add_help)
 {
     ArgumentParser *parser = (ArgumentParser *)malloc(sizeof(ArgumentParser));
     parser->program = strdup(program);
@@ -269,7 +326,7 @@ ArgumentParser *new_parser(char *program, char *usage, char *description, char *
 
 void add_arg(ArgumentParser *parser, char sym, const char *name, int required, int nargs, const char *default_value, const char *help)
 {
-    parser->arguments = realloc(parser->arguments, sizeof(Argument) * (parser->count + 1));
+    parser->arguments = (Argument *)realloc(parser->arguments, sizeof(Argument) * (parser->count + 1));
     parser->arguments[parser->count].name = strdup(name);
     parser->arguments[parser->count].required = required;
     parser->arguments[parser->count].def_val = default_value ? strdup(default_value) : NULL;
@@ -283,7 +340,7 @@ void add_arg(ArgumentParser *parser, char sym, const char *name, int required, i
 
 void add_kwarg(ArgumentParser *parser, char sym, const char *name, int required, const char *default_value, const char *help)
 {
-    parser->arguments = realloc(parser->arguments, sizeof(Argument) * (parser->count + 1));
+    parser->arguments = (Argument *)realloc(parser->arguments, sizeof(Argument) * (parser->count + 1));
     parser->arguments[parser->count].name = strdup(name);
     parser->arguments[parser->count].required = required;
     parser->arguments[parser->count].def_val = default_value ? strdup(default_value) : NULL;
@@ -296,7 +353,7 @@ void add_kwarg(ArgumentParser *parser, char sym, const char *name, int required,
 
 void add_flag(ArgumentParser *parser, char sym, const char *name, const char *help)
 {
-    parser->arguments = realloc(parser->arguments, sizeof(Argument) * (parser->count + 1));
+    parser->arguments = (Argument *)realloc(parser->arguments, sizeof(Argument) * (parser->count + 1));
     parser->arguments[parser->count].name = strdup(name);
     parser->arguments[parser->count].required = 0;
     parser->arguments[parser->count].def_val = NULL;
@@ -488,20 +545,51 @@ int get_flag(ArgumentParser *parser, const char *name)
     return 0;
 }
 
+void print_arg_help(ArgumentParser *parser, int i)
+{
+    printf("-%c --%s ", parser->arguments[i].sym ? parser->arguments[i].sym : ' ', parser->arguments[i].name);
+    printf("(required: %d , [%s] ) ", parser->arguments[i].required, parser->arguments[i].def_val ? parser->arguments[i].def_val : "None");
+    printf("= %s \n", parser->arguments[i].help ? parser->arguments[i].help : "No description");
+};
+
+void print_flag_help(ArgumentParser *parser, int i)
+{
+    printf("-" FT "%c" NC "--" NT "%s " NC, parser->arguments[i].sym ? parser->arguments[i].sym : '\0', parser->arguments[i].name);
+    printf(CC ":" NC HT "%s" NC "\n", parser->arguments[i].help ? parser->arguments[i].help : "");
+};
+
+void print_kwarg_help(ArgumentParser *parser, int i)
+{
+    // -c, --color : An Enum input [allowed:<red, blue, green>, required]
+
+    printf("-" FT "%c" NC "--" NT "%s " NC, parser->arguments[i].sym ? parser->arguments[i].sym : '\0', parser->arguments[i].name);
+    printf(CC ":" NC HT "%s" NC, parser->arguments[i].help ? parser->arguments[i].help : "");
+
+    printf("[" NC HT "%s" NC, parser->arguments[i].help ? parser->arguments[i].help : "");
+
+    printf("[" NC "required " NC CC ": " NC " %d , [%s] ) ", parser->arguments[i].required, parser->arguments[i].def_val ? parser->arguments[i].def_val : "");
+};
+
 void print_help(ArgumentParser *parser, int description, int usage, int epilog, int group)
 {
+    if (parser == NULL)
+    {
+        return;
+    }
+
     for (int i = 0; i < parser->count; i++)
     {
         if (parser->arguments[i].type == FLAG)
         {
-            printf("-%c --%s ", parser->arguments[i].sym ? parser->arguments[i].sym : '\0', parser->arguments[i].name);
-            printf("= %s \n", parser->arguments[i].help ? parser->arguments[i].help : "No description");
+            print_flag_help(parser, i);
+        }
+        else if (parser->arguments[i].type == KWARG)
+        {
+            print_kwarg_help(parser, i);
         }
         else
         {
-            printf("-%c --%s ", parser->arguments[i].sym ? parser->arguments[i].sym : ' ', parser->arguments[i].name);
-            printf("(required: %d , [%s] ) ", parser->arguments[i].required, parser->arguments[i].def_val ? parser->arguments[i].def_val : "None");
-            printf("= %s \n", parser->arguments[i].help ? parser->arguments[i].help : "No description");
+            print_arg_help(parser, i);
         }
     }
 }
@@ -551,6 +639,6 @@ void free_parser(ArgumentParser *parser)
         free(parser->epilog);
 }
 
-#pragma endregion // declarations
+#pragma endregion // DEFINATIONS
 
 #endif // DJOEZEKE_MYARGS_H
