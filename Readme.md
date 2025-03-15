@@ -1,5 +1,10 @@
 # MyArgs | Modern Argument Parser
 
+## Overview
+
+`Myargs` is a lightweight and feature-rich command-line argument parsing library for C/C++.
+It offers a modern and intuitive interface allowing for straightforward argument configuration and parsing.
+
 ## 📖 Description
 
 A lightweight header-only library for parsing command-line arguments, including support for flags and keyword arguments in an elegant manner.
@@ -93,6 +98,17 @@ Options:
      -v,--verbose : A flag to toggle verbose [implicit: "true", default: false]
            --help : print help [implicit: "true", default: false]
 ```
+
+## Compiler Compatibilty
+
+| Compiler | Min Version |
+| :-: | :-: |
+| GNU G++ | 13 |
+| Clang | 17 |
+
+> [!NOTE]
+>
+> Although currently the project has been properly verified using only the G++ and Clang compilers it should work fine with other compilers like MSVC.
 
 ## License 📄
 
