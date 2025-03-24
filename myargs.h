@@ -132,21 +132,6 @@ typedef struct
 #pragma region DECLARATIONS
 
 /**
- * Creates a new ArgumentParser instance.
- *
- * @param program The name of the program.
- * @param usage The usage message.
- * @param description The description of the program.
- * @param epilog The epilog message.
- * @param add_help Whether to add a help flag automatically.
- * @return A pointer to the newly created ArgumentParser instance.
- *
- * Example usage:
- * ArgumentParser *parser = new_parser("my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
- */
-ArgumentParser *new_parser(const char *program, const char *usage, const char *description, const char *epilog);
-
-/**
  * Prints the help message.
  *
  * @param parser The ArgumentParser instance.
@@ -426,27 +411,6 @@ void init_parser(ArgumentParser *parser, const char *program, const char *usage,
     {
         add_flag(parser, 'h', "help", "Shows this help Menu");
     }
-}
-
-ArgumentParser *new_parser(const char *program, const char *usage, const char *description, const char *epilog)
-{
-    ArgumentParser *parser = (ArgumentParser *)malloc(sizeof(ArgumentParser));
-    parser->program = strdup(program);
-    parser->usage = strdup(usage);
-    parser->description = strdup(description);
-    parser->epilog = strdup(epilog);
-    parser->arguments = NULL;
-    parser->count = 0;
-    parser->prefix_char = '-';
-    parser->add_help = true;
-    parser->allow_abbrev = true;
-    parser->exit_on_error = true;
-
-    if (parser->add_help)
-    {
-        add_flag(parser, 'h', "help", "Shows this help Menu");
-    }
-    return parser;
 }
 
 void add_arg(ArgumentParser *parser, char sym, const char *name, int required, int nargs, const char *default_value, const char *help)
