@@ -41,6 +41,8 @@
 #include <stdio.h>  // for printf
 #include <stdlib.h> // for realloc
 #include <string.h> // for strdup strlen
+#include <stdarg.h>
+#include <stdbool.h>
 
 #define MYARGS_VERSION_MAJOR 0
 #define MYARGS_VERSION_MINOR 1
@@ -76,6 +78,17 @@ typedef enum Type
     ARG,   /**< A positional argument, which is required and has a value. */
 } Type;
 
+typedef struct ArgumentError
+{
+    const char *argument;
+    const char *message;
+} ArgumentError;
+
+typedef struct ArgumentTypeError
+{
+    ArgumentError *error;
+} ArgumentTypeError;
+
 /**
  * Represents an argument in the argument parser.
  */
@@ -107,6 +120,11 @@ typedef struct
     int count;           /**< The number of arguments. */
     char *description;   /**< The description of the program. */
     Argument *arguments; /**< The list of arguments. */
+    char prefix_char;
+    const char *argument_default;
+    bool add_help;
+    bool allow_abbrev;
+    bool exit_on_error;
 } ArgumentParser;
 
 #pragma endregion // STRUCTURES
@@ -126,7 +144,26 @@ typedef struct
  * Example usage:
  * ArgumentParser *parser = new_parser("my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
  */
-ArgumentParser *new_parser(const char *program, const char *usage, const char *description, const char *epilog, int add_help);
+ArgumentParser *new_parser(const char *program, const char *usage, const char *description, const char *epilog);
+
+/**
+ * Prints the help message.
+ *
+ * @param parser The ArgumentParser instance.
+ * @param p program.
+ * @param d description.
+ * @param u usage.
+ * @param e epilog.
+ * @param c prefix_chars
+ * @param h add_help
+ * @param a allow_abbrev
+ * @param r exit_on_error
+ * @param D argument_default
+ *
+ * Example usage:
+ * print_help(parser, 1, 1, 1, 0);
+ */
+void parser(ArgumentParser *parser, const char *format, ...);
 
 /**
  * Initializes an ArgumentParser instance.
@@ -142,7 +179,7 @@ ArgumentParser *new_parser(const char *program, const char *usage, const char *d
  * ArgumentParser parser;
  * init_parser(&parser, "my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
  */
-void init_parser(ArgumentParser *parser, const char *program, const char *usage, const char *description, const char *epilog, int add_help);
+void init_parser(ArgumentParser *parser, const char *program, const char *usage, const char *description, const char *epilog);
 
 /**
  * Adds an argument to the argument parser.
@@ -243,7 +280,7 @@ int get_flag(ArgumentParser *parser, const char *name);
  * @param description Whether to print the description.
  * @param usage Whether to print the usage.
  * @param epilog Whether to print the epilog.
- * @param group Whether to print the group.
+ * @param group Whether
  *
  * Example usage:
  * print_help(parser, 1, 1, 1, 0);
@@ -294,7 +331,85 @@ void free_parser(ArgumentParser *parser);
 
 #pragma region DEFINATIONS
 
-void init_parser(ArgumentParser *parser, const char *program, const char *usage, const char *description, const char *epilog, int add_help)
+void parser(ArgumentParser *parser, const char *format, ...)
+{
+
+    parser->program = NULL;
+    parser->usage = NULL;
+    parser->description = NULL;
+    parser->epilog = NULL;
+    parser->arguments = NULL;
+    parser->count = 0;
+    parser->prefix_char = '-';
+    parser->add_help = true;
+    parser->allow_abbrev = true;
+    parser->exit_on_error = true;
+
+    if (format != NULL)
+    {
+        // Initialize variadic argument list
+        va_list args;
+
+        va_start(args, format);
+
+        size_t format_lenght = strlen(format);
+        char cc;
+
+        for (size_t i = 0; i < format_lenght; i++)
+        {
+            if (format[i] == '%')
+            {
+                i++;
+
+                if (format[i] == 'p') // program
+                {
+                    parser->program = strdup(va_arg(args, const char *));
+                }
+                else if (format[i] == 'u') // usage
+                {
+                    parser->usage = strdup(va_arg(args, const char *));
+                }
+                else if (format[i] == 'd') // description
+                {
+                    parser->description = strdup(va_arg(args, const char *));
+                }
+                else if (format[i] == 'D') // argument_default
+                {
+                    parser->argument_default = strdup(va_arg(args, const char *));
+                }
+                else if (format[i] == 'e') // epilog
+                {
+                    parser->program = strdup(va_arg(args, const char *));
+                }
+                else if (format[i] == 'c') // prefix_chars
+                {
+                    parser->prefix_char = va_arg(args, int);
+                }
+                else if (format[i] == 'h') // add_help
+                {
+                    parser->add_help = va_arg(args, int);
+                }
+                else if (format[i] == 'a') // allow_abbrev
+                {
+                    parser->allow_abbrev = va_arg(args, int);
+                }
+                else if (format[i] == 'r') // exit_on_error
+                {
+                    parser->exit_on_error = va_arg(args, int);
+                }
+            }
+        }
+        // Clean up argument list
+        va_end(args);
+    }
+
+    if (parser->add_help)
+    {
+        add_flag(parser, 'h', "help", "Shows this help Menu");
+    }
+};
+
+void init_parser(ArgumentParser *parser, const char *program, const char *usage, const char *description, const char *epilog)
 {
     parser->program = strdup(program);
     parser->usage = strdup(usage);
@@ -302,13 +417,18 @@ void init_parser(ArgumentParser *parser, const char *program, const char *usage,
     parser->epilog = strdup(epilog);
     parser->arguments = NULL;
     parser->count = 0;
-    if (add_help)
+    parser->prefix_char = '-';
+    parser->add_help = true;
+    parser->allow_abbrev = true;
+    parser->exit_on_error = true;
+
+    if (parser->add_help)
     {
         add_flag(parser, 'h', "help", "Shows this help Menu");
     }
 }
 
-ArgumentParser *new_parser(const char *program, const char *usage, const char *description, const char *epilog, int add_help)
+ArgumentParser *new_parser(const char *program, const char *usage, const char *description, const char *epilog)
 {
     ArgumentParser *parser = (ArgumentParser *)malloc(sizeof(ArgumentParser));
     parser->program = strdup(program);
@@ -317,7 +437,12 @@ ArgumentParser *new_parser(const char *program, const char *usage, const char *d
     parser->epilog = strdup(epilog);
     parser->arguments = NULL;
     parser->count = 0;
-    if (add_help)
+    parser->prefix_char = '-';
+    parser->add_help = true;
+    parser->allow_abbrev = true;
+    parser->exit_on_error = true;
+
+    if (parser->add_help)
     {
         add_flag(parser, 'h', "help", "Shows this help Menu");
     }
@@ -403,6 +528,7 @@ void parse_args(ArgumentParser *parser, int argc, char *argv[])
                 }
             }
         }
+
         // for -o -i -s=hello or -ois=hello
         else if (strncmp(argv[i], "-", 1) == 0)
         {
