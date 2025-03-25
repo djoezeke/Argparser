@@ -1,4 +1,4 @@
-#include "../myargs.hpp"
+#include "../myargs.h"
 
 int main(int argc, char *argv[])
 {

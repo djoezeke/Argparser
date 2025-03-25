@@ -44,6 +44,11 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+#include <iostream>
+#include <exception>
+#endif //__cplusplus
+
 #define MYARGS_VERSION_MAJOR 0
 #define MYARGS_VERSION_MINOR 1
 #define MYARGS_VERSION_PATCH 0
@@ -78,16 +83,16 @@ typedef enum Type
     ARG,   /**< A positional argument, which is required and has a value. */
 } Type;
 
-typedef struct ArgumentError
+typedef struct ArgumentError_t
 {
     const char *argument;
     const char *message;
-} ArgumentError;
+} ArgumentError_t;
 
-typedef struct ArgumentTypeError
+typedef struct ArgumentTypeError_t
 {
-    ArgumentError *error;
-} ArgumentTypeError;
+    ArgumentError_t *error;
+} ArgumentTypeError_t;
 
 /**
  * Represents an argument in the argument parser.
@@ -112,7 +117,7 @@ typedef struct
 /**
  * Represents the argument parser.
  */
-typedef struct
+typedef struct ArgumentParser
 {
     char *program;       /**< The name of the program. */
     char *usage;         /**< The usage message. */
@@ -730,5 +735,109 @@ void free_parser(ArgumentParser *parser)
 }
 
 #pragma endregion // DEFINATIONS
+
+#pragma region CPLUSPLUS
+
+#ifdef __cplusplus
+
+class ArgumentError : exception
+{
+private:
+    ArgumentError_t m_Error;
+
+public:
+    const char *what() {};
+};
+
+class ArgumentTypeError : ArgumentError
+{
+};
+
+#pragma region DECLARATIONS
+class Argparse
+{
+private:
+    ArgumentParser m_Parser;
+
+public:
+    Argparse();
+    Argparse(std::string program, std::string usage, std::string description, std::string epilog, int add_help);
+    ~Argparse();
+
+    void Help(int description = 1, int usage = 1, int epilog = 1, int group = 1);
+    void Parse(int argc, char *argv[]);
+
+    int GetFlag(const char *name);
+    const char *GetArg(const char *name);
+    const char *GetKwarg(const char *name);
+
+    void AddFlag(char sym, const char *name, const char *help);
+    void AddKwarg(char sym, const char *name, int required, const char *default_value, const char *help);
+    void AddArg(char sym, const char *name, int required, int nargs, const char *default_value, const char *help);
+};
+
+#pragma endregion // DECLARATIONS
+
+#pragma region DEFINATIONS
+
+Argparse::Argparse()
+{
+    init_parser(&m_Parser, "", "", "", "");
+};
+
+Argparse::Argparse(std::string program, std::string usage, std::string description, std::string epilog, int add_help)
+{
+    init_parser(&m_Parser, program.c_str(), usage.c_str(), description.c_str(), epilog.c_str(), add_help);
+}
+
+void Argparse::Help(int description, int usage, int epilog, int group)
+{
+    print_help(&m_Parser, description, usage, epilog, group);
+};
+
+const char *Argparse::GetArg(const char *name)
+{
+    return get_arg(&m_Parser, name);
+};
+
+int Argparse::GetFlag(const char *name)
+{
+    return get_flag(&m_Parser, name);
+};
+
+const char *Argparse::GetKwarg(const char *name)
+{
+    return get_kwarg(&m_Parser, name);
+};
+
+void Argparse::Parse(int argc, char *argv[])
+{
+    parse_args(&m_Parser, argc, argv);
+};
+
+void Argparse::AddFlag(char sym, const char *name, const char *help)
+{
+    add_flag(&m_Parser, sym, name, help);
+};
+
+void Argparse::AddArg(char sym, const char *name, int required, int nargs, const char *default_value, const char *help)
+{
+    add_arg(&m_Parser, sym, name, required, nargs, default_value, help);
+};
+
+void Argparse::AddKwarg(char sym, const char *name, int required, const char *default_value, const char *help)
+{
+    add_kwarg(&m_Parser, sym, name, required, default_value, help);
+};
+
+Argparse::~Argparse()
+{
+    free_parser(&m_Parser);
+}
+#pragma endregion // DEFINATIONS
+
+#endif // __cplusplus
+
+#pragma endregion // CPLUSPLUS
 
 #endif // DJOEZEKE_MYARGS_H
