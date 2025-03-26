@@ -740,13 +740,13 @@ void free_parser(ArgumentParser *parser)
 
 #ifdef __cplusplus
 
-class ArgumentError : exception
+class ArgumentError : std::exception
 {
 private:
     ArgumentError_t m_Error;
 
 public:
-    const char *what() {};
+    const char *what() { return ""; };
 };
 
 class ArgumentTypeError : ArgumentError
@@ -761,7 +761,7 @@ private:
 
 public:
     Argparse();
-    Argparse(std::string program, std::string usage, std::string description, std::string epilog, int add_help);
+    Argparse(std::string program, std::string usage, std::string description, std::string epilog);
     ~Argparse();
 
     void Help(int description = 1, int usage = 1, int epilog = 1, int group = 1);
@@ -785,9 +785,9 @@ Argparse::Argparse()
     init_parser(&m_Parser, "", "", "", "");
 };
 
-Argparse::Argparse(std::string program, std::string usage, std::string description, std::string epilog, int add_help)
+Argparse::Argparse(std::string program, std::string usage, std::string description, std::string epilog)
 {
-    init_parser(&m_Parser, program.c_str(), usage.c_str(), description.c_str(), epilog.c_str(), add_help);
+    init_parser(&m_Parser, program.c_str(), usage.c_str(), description.c_str(), epilog.c_str());
 }
 
 void Argparse::Help(int description, int usage, int epilog, int group)

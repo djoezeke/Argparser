@@ -3,7 +3,7 @@
 int main(int argc, char *argv[])
 {
     // Initialize the parser with program details and add a help flag automatically
-    Argparse parser("my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
+    Argparse parser("my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message");
 
     // Add flag arguments
     parser.AddFlag('v', "verbose", "Enable verbose mode");
