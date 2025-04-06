@@ -11,7 +11,6 @@
  * Example usage:
  * ./my_program -v -s -c 5
  */
-
 int main(int argc, char *argv[])
 {
     ArgumentParser argparser;

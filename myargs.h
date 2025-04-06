@@ -132,190 +132,238 @@ typedef struct ArgumentParser
     bool exit_on_error;
 } ArgumentParser;
 
+#ifdef __cplusplus
+
+class ArgumentError : std::exception
+{
+private:
+    ArgumentError_t m_Error;
+
+public:
+    const char *what() { return ""; };
+};
+
+class ArgumentTypeError : ArgumentError
+{
+};
+
+class Argparse
+{
+private:
+    ArgumentParser m_Parser;
+
+public:
+    Argparse();
+    Argparse(std::string program, std::string usage, std::string description, std::string epilog);
+    ~Argparse();
+
+    void Help(int description = 1, int usage = 1, int epilog = 1, int group = 1);
+    void Parse(int argc, char *argv[]);
+
+    int GetFlag(const char *name);
+    const char *GetArg(const char *name);
+    const char *GetKwarg(const char *name);
+
+    void AddFlag(char sym, const char *name, const char *help);
+    void AddKwarg(char sym, const char *name, int required, const char *default_value, const char *help);
+    void AddArg(char sym, const char *name, int required, int nargs, const char *default_value, const char *help);
+};
+
+#endif // __cplusplus
+
 #pragma endregion // STRUCTURES
 
 #pragma region DECLARATIONS
 
-/**
- * Prints the help message.
- *
- * @param parser The ArgumentParser instance.
- * @param p program.
- * @param d description.
- * @param u usage.
- * @param e epilog.
- * @param c prefix_chars
- * @param h add_help
- * @param a allow_abbrev
- * @param r exit_on_error
- * @param D argument_default
- *
- * Example usage:
- * print_help(parser, 1, 1, 1, 0);
- */
-void parser(ArgumentParser *parser, const char *format, ...);
+#ifdef __cplusplus
+extern "C"
+{
+#endif //__cplusplus
 
-/**
- * Initializes an ArgumentParser instance.
- *
- * @param parser The ArgumentParser to initialize.
- * @param program The name of the program.
- * @param usage The usage message.
- * @param description The description of the program.
- * @param epilog The epilog message.
- * @param add_help Whether to add a help flag automatically.
- *
- * Example usage:
- * ArgumentParser parser;
- * init_parser(&parser, "my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
- */
-void init_parser(ArgumentParser *parser, const char *program, const char *usage, const char *description, const char *epilog);
+    /**
+     * Prints the help message.
+     *
+     * @param parser The ArgumentParser instance.
+     * @param p program.
+     * @param d description.
+     * @param u usage.
+     * @param e epilog.
+     * @param c prefix_chars
+     * @param h add_help
+     * @param a allow_abbrev
+     * @param r exit_on_error
+     * @param D argument_default
+     *
+     * Example usage:
+     * print_help(parser, 1, 1, 1, 0);
+     */
+    void parser(ArgumentParser *parser, const char *format, ...);
 
-/**
- * Adds an argument to the argument parser.
- *
- * @param parser The ArgumentParser to add the argument to.
- * @param sym The short symbol for the argument.
- * @param name The long name for the argument.
- * @param required Whether the argument is required.
- * @param nargs The number of arguments expected.
- * @param default_value The default value for the argument.
- * @param help The help message for the argument.
- *
- * Example usage:
- * add_arg(parser, 'o', "output", 1, 1, "default_output.txt", "Output file");
- */
-void add_arg(ArgumentParser *parser, char sym, const char *name, int required, int nargs, const char *default_value, const char *help);
+    /**
+     * Initializes an ArgumentParser instance.
+     *
+     * @param parser The ArgumentParser to initialize.
+     * @param program The name of the program.
+     * @param usage The usage message.
+     * @param description The description of the program.
+     * @param epilog The epilog message.
+     * @param add_help Whether to add a help flag automatically.
+     *
+     * Example usage:
+     * ArgumentParser parser;
+     * init_parser(&parser, "my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
+     */
+    void init_parser(ArgumentParser *parser, const char *program, const char *usage, const char *description, const char *epilog);
 
-/**
- * Adds a keyword argument to the argument parser.
- *
- * @param parser The ArgumentParser to add the argument to.
- * @param sym The short symbol for the argument.
- * @param name The long name for the argument.
- * @param required Whether the argument is required.
- * @param default_value The default value for the argument.
- * @param help The help message for the argument.
- *
- * Example usage:
- * add_kwarg(parser, 'v', "verbose", 0, "false", "Enable verbose mode");
- */
-void add_kwarg(ArgumentParser *parser, char sym, const char *name, int required, const char *default_value, const char *help);
+    /**
+     * Adds an argument to the argument parser.
+     *
+     * @param parser The ArgumentParser to add the argument to.
+     * @param sym The short symbol for the argument.
+     * @param name The long name for the argument.
+     * @param required Whether the argument is required.
+     * @param nargs The number of arguments expected.
+     * @param default_value The default value for the argument.
+     * @param help The help message for the argument.
+     *
+     * Example usage:
+     * add_arg(parser, 'o', "output", 1, 1, "default_output.txt", "Output file");
+     */
+    void add_arg(ArgumentParser *parser, char sym, const char *name, int required, int nargs, const char *default_value, const char *help);
 
-/**
- * Adds a flag argument to the argument parser.
- *
- * @param parser The ArgumentParser to add the argument to.
- * @param sym The short symbol for the argument.
- * @param name The long name for the argument.
- * @param help The help message for the argument.
- *
- * Example usage:
- * add_flag(parser, 'h', "help", "Show help message");
- */
-void add_flag(ArgumentParser *parser, char sym, const char *name, const char *help);
+    /**
+     * Adds a keyword argument to the argument parser.
+     *
+     * @param parser The ArgumentParser to add the argument to.
+     * @param sym The short symbol for the argument.
+     * @param name The long name for the argument.
+     * @param required Whether the argument is required.
+     * @param default_value The default value for the argument.
+     * @param help The help message for the argument.
+     *
+     * Example usage:
+     * add_kwarg(parser, 'v', "verbose", 0, "false", "Enable verbose mode");
+     */
+    void add_kwarg(ArgumentParser *parser, char sym, const char *name, int required, const char *default_value, const char *help);
 
-/**
- * Parses the command-line arguments.
- *
- * @param parser The ArgumentParser instance.
- * @param argc The argument count.
- * @param argv The argument vector.
- *
- * Example usage:
- * parse_args(parser, argc, argv);
- */
-void parse_args(ArgumentParser *parser, int argc, char *argv[]);
+    /**
+     * Adds a flag argument to the argument parser.
+     *
+     * @param parser The ArgumentParser to add the argument to.
+     * @param sym The short symbol for the argument.
+     * @param name The long name for the argument.
+     * @param help The help message for the argument.
+     *
+     * Example usage:
+     * add_flag(parser, 'h', "help", "Show help message");
+     */
+    void add_flag(ArgumentParser *parser, char sym, const char *name, const char *help);
 
-/**
- * Retrieves the value of an argument.
- *
- * @param parser The ArgumentParser instance.
- * @param name The name of the argument.
- * @return The value of the argument.
- *
- * Example usage:
- * const char *output = get_arg(parser, "output");
- */
-const char *get_arg(ArgumentParser *parser, const char *name);
+    /**
+     * Parses the command-line arguments.
+     *
+     * @param parser The ArgumentParser instance.
+     * @param argc The argument count.
+     * @param argv The argument vector.
+     *
+     * Example usage:
+     * parse_args(parser, argc, argv);
+     */
+    void parse_args(ArgumentParser *parser, int argc, char *argv[]);
 
-/**
- * Retrieves the value of a keyword argument.
- *
- * @param parser The ArgumentParser instance.
- * @param name The name of the keyword argument.
- * @return The value of the keyword argument.
- *
- * Example usage:
- * const char *verbose = get_kwarg(parser, "verbose");
- */
-const char *get_kwarg(ArgumentParser *parser, const char *name);
+    /**
+     * Retrieves the value of an argument.
+     *
+     * @param parser The ArgumentParser instance.
+     * @param name The name of the argument.
+     * @return The value of the argument.
+     *
+     * Example usage:
+     * const char *output = get_arg(parser, "output");
+     */
+    const char *get_arg(ArgumentParser *parser, const char *name);
 
-/**
- * Retrieves the value of a flag argument.
- *
- * @param parser The ArgumentParser instance.
- * @param name The name of the flag argument.
- * @return The value of the flag argument.
- *
- * Example usage:
- * int help = get_flag(parser, "help");
- */
-int get_flag(ArgumentParser *parser, const char *name);
+    /**
+     * Retrieves the value of a keyword argument.
+     *
+     * @param parser The ArgumentParser instance.
+     * @param name The name of the keyword argument.
+     * @return The value of the keyword argument.
+     *
+     * Example usage:
+     * const char *verbose = get_kwarg(parser, "verbose");
+     */
+    const char *get_kwarg(ArgumentParser *parser, const char *name);
 
-/**
- * Prints the help message.
- *
- * @param parser The ArgumentParser instance.
- * @param description Whether to print the description.
- * @param usage Whether to print the usage.
- * @param epilog Whether to print the epilog.
- * @param group Whether
- *
- * Example usage:
- * print_help(parser, 1, 1, 1, 0);
- */
-void print_help(ArgumentParser *parser, int description, int usage, int epilog, int group);
+    /**
+     * Retrieves the value of a flag argument.
+     *
+     * @param parser The ArgumentParser instance.
+     * @param name The name of the flag argument.
+     * @return The value of the flag argument.
+     *
+     * Example usage:
+     * int help = get_flag(parser, "help");
+     */
+    int get_flag(ArgumentParser *parser, const char *name);
 
-/**
- * Prints the help message.
- *
- * @param parser The ArgumentParser instance.
- *
- * Example usage:
- * print_flag_help(parser, 1, 1, 1, 0);
- */
-void print_arg_help(ArgumentParser *parser, int i);
+    /**
+     * Prints the help message.
+     *
+     * @param parser The ArgumentParser instance.
+     * @param description Whether to print the description.
+     * @param usage Whether to print the usage.
+     * @param epilog Whether to print the epilog.
+     * @param group Whether
+     *
+     * Example usage:
+     * print_help(parser, 1, 1, 1, 0);
+     */
+    void print_help(ArgumentParser *parser, int description, int usage, int epilog, int group);
 
-/**
- * Prints the help message.
- *
- * @param parser The ArgumentParser instance.
- *
- * Example usage:
- * print_flag_help(parser, 1, 1, 1, 0);
- */
-void print_flag_help(ArgumentParser *parser, int i);
+    /**
+     * Prints the help message.
+     *
+     * @param parser The ArgumentParser instance.
+     *
+     * Example usage:
+     * print_flag_help(parser, 1, 1, 1, 0);
+     */
+    void print_arg_help(ArgumentParser *parser, int i);
 
-/**
- * Prints the help message.
- *
- * @param parser The ArgumentParser instance.
- *
- * Example usage:
- * print_flag_help(parser, 1, 1, 1, 0);
- */
-void print_kwarg_help(ArgumentParser *parser, int i);
+    /**
+     * Prints the help message.
+     *
+     * @param parser The ArgumentParser instance.
+     *
+     * Example usage:
+     * print_flag_help(parser, 1, 1, 1, 0);
+     */
+    void print_flag_help(ArgumentParser *parser, int i);
 
-/**
- * Frees the memory allocated for the ArgumentParser instance.
- *
- * @param parser The ArgumentParser instance.
- *
- * Example usage:
- * free_parser(parser);
- */
-void free_parser(ArgumentParser *parser);
+    /**
+     * Prints the help message.
+     *
+     * @param parser The ArgumentParser instance.
+     *
+     * Example usage:
+     * print_flag_help(parser, 1, 1, 1, 0);
+     */
+    void print_kwarg_help(ArgumentParser *parser, int i);
+
+    /**
+     * Frees the memory allocated for the ArgumentParser instance.
+     *
+     * @param parser The ArgumentParser instance.
+     *
+     * Example usage:
+     * free_parser(parser);
+     */
+    void free_parser(ArgumentParser *parser);
+
+#ifdef __cplusplus
+}
+#endif //__cplusplus
 
 #pragma endregion // DECLARATIONS
 
@@ -337,7 +385,6 @@ void parser(ArgumentParser *parser, const char *format, ...)
 
     if (format != NULL)
     {
-        // Initialize variadic argument list
         va_list args;
 
         va_start(args, format);
@@ -734,51 +781,7 @@ void free_parser(ArgumentParser *parser)
         free(parser->epilog);
 }
 
-#pragma endregion // DEFINATIONS
-
-#pragma region CPLUSPLUS
-
 #ifdef __cplusplus
-
-class ArgumentError : std::exception
-{
-private:
-    ArgumentError_t m_Error;
-
-public:
-    const char *what() { return ""; };
-};
-
-class ArgumentTypeError : ArgumentError
-{
-};
-
-#pragma region DECLARATIONS
-class Argparse
-{
-private:
-    ArgumentParser m_Parser;
-
-public:
-    Argparse();
-    Argparse(std::string program, std::string usage, std::string description, std::string epilog);
-    ~Argparse();
-
-    void Help(int description = 1, int usage = 1, int epilog = 1, int group = 1);
-    void Parse(int argc, char *argv[]);
-
-    int GetFlag(const char *name);
-    const char *GetArg(const char *name);
-    const char *GetKwarg(const char *name);
-
-    void AddFlag(char sym, const char *name, const char *help);
-    void AddKwarg(char sym, const char *name, int required, const char *default_value, const char *help);
-    void AddArg(char sym, const char *name, int required, int nargs, const char *default_value, const char *help);
-};
-
-#pragma endregion // DECLARATIONS
-
-#pragma region DEFINATIONS
 
 Argparse::Argparse()
 {
@@ -834,10 +837,9 @@ Argparse::~Argparse()
 {
     free_parser(&m_Parser);
 }
-#pragma endregion // DEFINATIONS
 
 #endif // __cplusplus
 
-#pragma endregion // CPLUSPLUS
+#pragma endregion // DEFINATIONS
 
 #endif // DJOEZEKE_MYARGS_H
