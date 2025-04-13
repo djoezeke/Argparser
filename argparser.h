@@ -59,7 +59,9 @@
 #endif // MYARGS_DEBUG
 
 #define MYARGS_THEME_HELP
+
 #ifdef MYARGS_THEME_HELP
+
 #define ST "\e[0;32m" // symbol
 #define NT "\e[0;30m" // name
 #define RT "\e[0;33m" // required
@@ -69,9 +71,7 @@
 #define CC "\e[0;34m" // colon
 #define NC "\e[0;30m" // none
 #define HT "\e[0;30m" //
-#else
-#define TNAME(x)
-#define TIMEIT()
+
 #endif // MYARGS_THEME_HELP
 
 /**
