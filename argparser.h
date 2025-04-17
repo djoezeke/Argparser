@@ -1,3 +1,26 @@
+/* -*- C++ -*- compatibility header. */
+
+// MIT License
+
+// Copyright (c) 2025 Sackey Ezekiel Etrue
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 /**
  * Example usage:
@@ -28,16 +51,23 @@
  * }
  */
 
-// TODO : nargs
-// TODO : arg parsing without - or --
-// TODO : Complete C++ Wrapper
-// TODO : Reimplement print_args
-// TODO : Documentation
-// TODO : Modify README
-
 #ifndef ARGPARSER_H
+
+/** @file argparser.h
+ *
+ *  This is a  C/C++ Argument Parser Library Header  @c argparser.h.
+ *  You should @c \#include this file in your programs, for all compilers C or C++.
+ *
+
+ * @author Sackey Ezekiel Etrue.
+ * @version 0.1.0
+ * @c <https://www.github.com/djoezeke/argparser>.
+ *
+ */
+
 #define ARGPARSER_H
 
+/* All the headers include this file. */
 #include <stdio.h>  // for printf
 #include <stdlib.h> // for realloc
 #include <string.h> // for strdup strlen
@@ -46,6 +76,7 @@
 
 #ifdef __cplusplus
 
+/* C++ Exclusive headers. */
 #include <iostream>
 #include <exception>
 
@@ -58,9 +89,7 @@
 #ifdef MYARGS_DEBUG
 #endif // MYARGS_DEBUG
 
-#define MYARGS_THEME_HELP
-
-#ifdef MYARGS_THEME_HELP
+#ifndef MYARGS_THEME_HELP
 
 #define ST "\e[0;32m" // symbol
 #define NT "\e[0;30m" // name
@@ -84,15 +113,18 @@ typedef enum Type
     ARG,   /**< A positional argument, which is required and has a value. */
 } Type;
 
+/**
+ * Represents the type of argument error.
+ */
 typedef enum ArgumentError_t
 {
     UKNOWN = -1,
 } ArgumentError_t;
 
 /**
- * Represents an argument in the argument parser.
+ * Represents an argument type.
  */
-typedef struct
+typedef struct Argument_t
 {
     char *name;    /**< The name of the argument. */
     char sym;      /**< The short symbol for the argument. */
@@ -107,20 +139,20 @@ typedef struct
         char **values; /**< The values of the argument if multiple. */
     };
 
-} Argument;
+} Argument_t;
 
 /**
- * Represents the argument parser.
+ * Represents the argument parser type.
  */
 typedef struct ArgumentParser_t
 {
-    char *program;       /**< The name of the program. */
-    char *usage;         /**< The usage message. */
-    char *epilog;        /**< The epilog message. */
-    int count;           /**< The number of arguments. */
-    char *description;   /**< The description of the program. */
-    Argument *arguments; /**< The list of arguments. */
-    char prefix_char;
+    char *program;         /**< The name of the program. */
+    char *usage;           /**< The usage message. */
+    char *epilog;          /**< The epilog message. */
+    int count;             /**< The number of arguments. */
+    char *description;     /**< The description of the program. */
+    Argument_t *arguments; /**< The list of arguments. */
+    char prefix_char;      /**< The prefix character. */
     const char *argument_default;
     bool add_help;
     bool allow_abbrev;
@@ -130,7 +162,7 @@ typedef struct ArgumentParser_t
 #ifdef __cplusplus
 
 /**
- * @brief CsveeError class for Csvee-related errors.
+ * @brief ArgumentError class for Argument-related errors.
  */
 class ArgumentError : public std::exception
 {
@@ -184,6 +216,9 @@ private:
     ArgumentParser_t *m_Parser;
 
 public:
+    /**
+     * @brief Default constructor.
+     */
     Argparser();
     Argparser(std::string program, std::string usage, std::string description, std::string epilog);
 
@@ -198,11 +233,17 @@ public:
     void AddKwarg(char sym, const char *name, int required, const char *default_value, const char *help);
     void AddArg(char sym, const char *name, int required, int nargs, const char *default_value, const char *help);
 
+    /**
+     * @brief Destructor.
+     */
     ~Argparser();
 };
 
 #else // C
 
+/**
+ * @brief ArgumentError struct for Argument-related errors.
+ */
 typedef struct ArgumentError
 {
     ArgumentError_t m_Type; //!< The error type.
@@ -231,7 +272,7 @@ typedef struct ArgumentError
 } ArgumentError;
 
 /**
- * Represents the argument parser.
+ * Represents the Argument parser.
  */
 typedef struct Argparser
 {
@@ -279,8 +320,8 @@ const char *GetErrName(ArgumentError *);
 void freeArgumentError(ArgumentError *);
 
 /**
- * Prints the help message.
- *
+ * @brief Constructs an Argparser with a specific format.
+ * @param format parser format strind.
  * @param parser The Argparser instance.
  * @param p program.
  * @param d description.
@@ -291,6 +332,7 @@ void freeArgumentError(ArgumentError *);
  * @param a allow_abbrev
  * @param r exit_on_error
  * @param D argument_default
+ * @return An Argparser Object.
  *
  * Example usage:
  * newArgumentParser(format,...);
@@ -308,6 +350,10 @@ void AddFlag(Argparser *, char, const char *, const char *);
 void AddKwarg(Argparser *, char, const char *, int, const char *, const char *);
 void AddArg(Argparser *, char, const char *, int, int, const char *, const char *);
 
+/**
+ * @brief Destroy and free an Argprser.
+ * @param argparser The Argparser to destory.
+ */
 void freeArgumentParser(Argparser *);
 
 #endif // __cplusplus

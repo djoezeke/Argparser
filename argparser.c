@@ -286,7 +286,7 @@ extern "C"
 
     void add_arg(ArgumentParser_t *parser, char sym, const char *name, int required, int nargs, const char *default_value, const char *help)
     {
-        parser->arguments = (Argument *)realloc(parser->arguments, sizeof(Argument) * (parser->count + 1));
+        parser->arguments = (Argument_t *)realloc(parser->arguments, sizeof(Argument_t) * (parser->count + 1));
         parser->arguments[parser->count].name = strdup(name);
         parser->arguments[parser->count].required = required;
         parser->arguments[parser->count].def_val = default_value ? strdup(default_value) : NULL;
@@ -300,7 +300,7 @@ extern "C"
 
     void add_kwarg(ArgumentParser_t *parser, char sym, const char *name, int required, const char *default_value, const char *help)
     {
-        parser->arguments = (Argument *)realloc(parser->arguments, sizeof(Argument) * (parser->count + 1));
+        parser->arguments = (Argument_t *)realloc(parser->arguments, sizeof(Argument_t) * (parser->count + 1));
         parser->arguments[parser->count].name = strdup(name);
         parser->arguments[parser->count].required = required;
         parser->arguments[parser->count].def_val = default_value ? strdup(default_value) : NULL;
@@ -313,7 +313,7 @@ extern "C"
 
     void add_flag(ArgumentParser_t *parser, char sym, const char *name, const char *help)
     {
-        parser->arguments = (Argument *)realloc(parser->arguments, sizeof(Argument) * (parser->count + 1));
+        parser->arguments = (Argument_t *)realloc(parser->arguments, sizeof(Argument_t) * (parser->count + 1));
         parser->arguments[parser->count].name = strdup(name);
         parser->arguments[parser->count].required = 0;
         parser->arguments[parser->count].def_val = NULL;
