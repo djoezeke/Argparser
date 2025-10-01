@@ -1,4 +1,4 @@
-#include "../myargs.h"
+#include "../argparser.h"
 #include <assert.h>
 
 /**
@@ -13,7 +13,7 @@
  */
 int main(int argc, char *argv[])
 {
-    ArgumentParser argparser;
+    Argparser argparser;
 
     // Initialize the argparser with program details and add a help flag automatically
     // init_parser(&argparser, "my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message");
