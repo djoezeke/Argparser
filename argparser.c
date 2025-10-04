@@ -1,2 +1,2 @@
 #define ARGPARSER_IMPLEMENTATION
-#include "argparser.hpp"
+#include "argparser.h"

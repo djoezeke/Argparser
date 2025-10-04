@@ -29,17 +29,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
-   Do this:
-    #define ARGPARSER_IMPLEMENTATION
-   before you include this file in *one* C or C++ file to create the implementation.
-
-   // i.e. it should look like this:
-   #include ...
-   #include ...
-   #define ARGPARSER_IMPLEMENTATION
-   #include "argparser.h"
-
-* Example usage:
+ * Do this:
+ *  #define ARGPARSER_IMPLEMENTATION
+ * before you include this file in *one* C or C++ file to create the implementation.
+ *
+ * i.e. it should look like this:
+ *
+ * #include ...
+ * #include ...
+ * #define ARGPARSER_IMPLEMENTATION
+ * #include "argparser.h"
+ *
+ * Example usage:
  * @code
  * int main(int argc, char *argv[]) {
  *     Argparser *parser = new_parser("my_program", "Usage: my_program
@@ -72,6 +73,9 @@
  *
  *  [SECTION] Header mess
  *  [SECTION] Configurable macros
+ *  [SECTION] Platform Defines
+ *  [SECTION] Compiler Defines
+ *  [SECTION] Compiler Warnings
  *  [SECTION] Imports/Exports
  *  [SECTION] Data Structures
  *  [SECTION] C Only Functions
@@ -81,7 +85,7 @@
  *
  *  Internal:
  *
- *  [SECTION] Defines
+ *  [SECTION] Macro Defines
  *  [SECTION] Data Structures
  *  [SECTION] C Only Functions
  *    - [SECTION] Declarations
@@ -178,8 +182,222 @@
 
 #endif // ARGPARSER_THEMED_PRINT
 
-#ifdef ARGPARSER_TESTS
-#endif // ARGPARSER_TESTS
+//-----------------------------------------------------------------------------
+// [SECTION] Platform
+//-----------------------------------------------------------------------------
+
+/**
+ * @defgroup platform Platform Definitions
+ * @{
+ */
+
+/**
+ * @brief   Checks if the compiler is of given brand.
+ * @param   name Platform, like `APPLE`.
+ * @retval  true   It is.
+ * @retval  false  It isn't.
+ */
+#define ARGPARSER_PLATFORM_IS(name) ARGPARSER_PLATFORM_IS_##name
+
+/**
+ * @brief  Returns the current platform name.
+ * @return  platform name.
+ */
+
+#ifdef __APPLE__
+/**
+ * A preprocessor macro that is only defined if compiling for MacOS.
+ */
+#define ARGPARSER_PLATFORM_IS_APPLE 1
+/**
+ * @brief  Returns the current platform name.
+ * @return  platform name.
+ */
+#define ARGPARSER_PLATFORM_NAME_IS "Apple"
+#elif defined(linux) || defined(__linux) || defined(__linux__)
+/**
+ * A preprocessor macro that is only defined if compiling for Linux.
+ */
+#define ARGPARSER_PLATFORM_IS_LINUX 1
+/**
+ * @brief  Returns the current platform name.
+ * @return  platform name.
+ */
+#define ARGPARSER_PLATFORM_NAME_IS "Linux"
+#elif defined(WIN32) || defined(__WIN32__) || defined(_WIN32) || defined(_MSC_VER) || defined(__MINGW32__)
+/**
+ * A preprocessor macro that is only defined if compiling for Windows.
+ */
+#define ARGPARSER_PLATFORM_IS_WINDOWS 1
+/**
+ * @brief  Returns the current platform name.
+ * @return  platform name.
+ */
+#define ARGPARSER_PLATFORM_NAME_IS "Windows"
+#else
+/**
+ * A preprocessor macro that is only defined if compiling for others.
+ */
+#define ARGPARSER_PLATFORM_IS_OTHERS 1
+/**
+ * @brief  Returns the current platform name.
+ * @return  platform name.
+ */
+#define ARGPARSER_PLATFORM_NAME_IS "Others"
+#endif
+
+/** @} */
+
+//-----------------------------------------------------------------------------
+// [SECTION] Compiler
+//-----------------------------------------------------------------------------
+
+/**
+ * @defgroup compiler Compiler Definitions
+ * @{
+ */
+
+/**
+ * @brief   Checks if the compiler is of given brand.
+ * @param   name  Compiler brand, like `MSVC`.
+ * @retval  true   It is.
+ * @retval  false  It isn't.
+ */
+#define ARGPARSER_COMPILER_IS(name) ARGPARSER_COMPILER_IS_##name
+
+/// Compiler is apple
+#if !defined(__clang__)
+#define ARGPARSER_COMPILER_IS_APPLE 0
+#elif !defined(__apple_build_version__)
+#define ARGPARSER_COMPILER_IS_APPLE 0
+#else
+#define ARGPARSER_COMPILER_IS_APPLE 1
+#define ARGPARSER_COMPILER_VERSION_MAJOR __clang_major__
+#define ARGPARSER_COMPILER_VERSION_MINOR __clang_minor__
+#define ARGPARSER_COMPILER_VERSION_PATCH __clang_patchlevel__
+#endif
+
+/// Compiler is clang
+#if !defined(__clang__)
+#define ARGPARSER_COMPILER_IS_CLANG 0
+#elif ARGPARSER_COMPILER_IS(APPLE)
+#define ARGPARSER_COMPILER_IS_CLANG 0
+#else
+#define ARGPARSER_COMPILER_IS_CLANG 1
+#define ARGPARSER_COMPILER_VERSION_MAJOR __clang_major__
+#define ARGPARSER_COMPILER_VERSION_MINOR __clang_minor__
+#define ARGPARSER_COMPILER_VERSION_PATCH __clang_patchlevel__
+#endif
+
+/// Compiler is intel
+#if !defined(__INTEL_COMPILER)
+#define ARGPARSER_COMPILER_IS_INTEL 0
+#elif !defined(__INTEL_COMPILER_UPDATE)
+#define ARGPARSER_COMPILER_IS_INTEL 1
+/* __INTEL_COMPILER = XXYZ */
+#define ARGPARSER_COMPILER_VERSION_MAJOR (__INTEL_COMPILER / 100)
+#define ARGPARSER_COMPILER_VERSION_MINOR (__INTEL_COMPILER % 100 / 10)
+#define ARGPARSER_COMPILER_VERSION_PATCH (__INTEL_COMPILER % 10)
+#else
+#define ARGPARSER_COMPILER_IS_INTEL 1
+/* __INTEL_COMPILER = XXYZ */
+#define ARGPARSER_COMPILER_VERSION_MAJOR (__INTEL_COMPILER / 100)
+#define ARGPARSER_COMPILER_VERSION_MINOR (__INTEL_COMPILER % 100 / 10)
+#define ARGPARSER_COMPILER_VERSION_PATCH __INTEL_COMPILER_UPDATE
+#endif
+
+/// Compiler is msc
+#if !defined(_MSC_VER)
+#define ARGPARSER_COMPILER_IS_MSVC 0
+#elif ARGPARSER_COMPILER_IS(CLANG)
+#define ARGPARSER_COMPILER_IS_MSVC 0
+#elif ARGPARSER_COMPILER_IS(INTEL)
+#define ARGPARSER_COMPILER_IS_MSVC 0
+#elif _MSC_VER >= 1400
+#define ARGPARSER_COMPILER_IS_MSVC 1
+/* _MSC_FULL_VER = XXYYZZZZZ */
+#define ARGPARSER_COMPILER_VERSION_MAJOR (_MSC_FULL_VER / 10000000)
+#define ARGPARSER_COMPILER_VERSION_MINOR (_MSC_FULL_VER % 10000000 / 100000)
+#define ARGPARSER_COMPILER_VERSION_PATCH (_MSC_FULL_VER % 100000)
+#elif defined(_MSC_FULL_VER)
+#define ARGPARSER_COMPILER_IS_MSVC 1
+/* _MSC_FULL_VER = XXYYZZZZ */
+#define ARGPARSER_COMPILER_VERSION_MAJOR (_MSC_FULL_VER / 1000000)
+#define ARGPARSER_COMPILER_VERSION_MINOR (_MSC_FULL_VER % 1000000 / 10000)
+#define ARGPARSER_COMPILER_VERSION_PATCH (_MSC_FULL_VER % 10000)
+#else
+#define ARGPARSER_COMPILER_IS_MSVC 1
+/* _MSC_VER = XXYY */
+#define ARGPARSER_COMPILER_VERSION_MAJOR (_MSC_VER / 100)
+#define ARGPARSER_COMPILER_VERSION_MINOR (_MSC_VER % 100)
+#define ARGPARSER_COMPILER_VERSION_PATCH 0
+#endif
+
+/// Compiler is gcc
+#if !defined(__GNUC__)
+#define ARGPARSER_COMPILER_IS_GCC 0
+#elif ARGPARSER_COMPILER_IS(APPLE)
+#define ARGPARSER_COMPILER_IS_GCC 0
+#elif ARGPARSER_COMPILER_IS(CLANG)
+#define ARGPARSER_COMPILER_IS_GCC 0
+#elif ARGPARSER_COMPILER_IS(INTEL)
+#define ARGPARSER_COMPILER_IS_GCC 0
+#else
+#define ARGPARSER_COMPILER_IS_GCC 1
+#define ARGPARSER_COMPILER_VERSION_MAJOR __GNUC__
+#define ARGPARSER_COMPILER_VERSION_MINOR __GNUC_MINOR__
+#define ARGPARSER_COMPILER_VERSION_PATCH __GNUC_PATCHLEVEL__
+#endif
+
+/** @} */
+
+/**
+ * @defgroup compiler Compiler Warnings
+ * @{
+ */
+
+#if ARGPARSER_COMPILER_IS(CLANG)
+#define ARGPARSER_PRAGMA_TO_STR(x) _Pragma(#x)
+#define ARGPARSER_CLANG_SUPPRESS_WARNING_PUSH _Pragma("clang diagnostic push")
+#define ARGPARSER_CLANG_SUPPRESS_WARNING(w) ARGPARSER_PRAGMA_TO_STR(clang diagnostic ignored w)
+#define ARGPARSER_CLANG_SUPPRESS_WARNING_POP _Pragma("clang diagnostic pop")
+#define ARGPARSER_CLANG_SUPPRESS_WARNING_WITH_PUSH(w) \
+  ARGPARSER_CLANG_SUPPRESS_WARNING_PUSH ARGPARSER_CLANG_SUPPRESS_WARNING(w)
+#else // ARGPARSER_CLANG
+#define ARGPARSER_CLANG_SUPPRESS_WARNING_PUSH
+#define ARGPARSER_CLANG_SUPPRESS_WARNING(w)
+#define ARGPARSER_CLANG_SUPPRESS_WARNING_POP
+#define ARGPARSER_CLANG_SUPPRESS_WARNING_WITH_PUSH(w)
+#endif // ARGPARSER_CLANG
+
+#if ARGPARSER_COMPILER_IS(GCC)
+#define ARGPARSER_PRAGMA_TO_STR(x) _Pragma(#x)
+#define ARGPARSER_GCC_SUPPRESS_WARNING_PUSH _Pragma("GCC diagnostic push")
+#define ARGPARSER_GCC_SUPPRESS_WARNING(w) ARGPARSER_PRAGMA_TO_STR(GCC diagnostic ignored w)
+#define ARGPARSER_GCC_SUPPRESS_WARNING_POP _Pragma("GCC diagnostic pop")
+#define ARGPARSER_GCC_SUPPRESS_WARNING_WITH_PUSH(w) \
+  ARGPARSER_GCC_SUPPRESS_WARNING_PUSH ARGPARSER_GCC_SUPPRESS_WARNING(w)
+#else // ARGPARSER_GCC
+#define ARGPARSER_GCC_SUPPRESS_WARNING_PUSH
+#define ARGPARSER_GCC_SUPPRESS_WARNING(w)
+#define ARGPARSER_GCC_SUPPRESS_WARNING_POP
+#define ARGPARSER_GCC_SUPPRESS_WARNING_WITH_PUSH(w)
+#endif // ARGPARSER_GCC
+
+#if ARGPARSER_COMPILER_IS(MSVC)
+#define ARGPARSER_MSVC_SUPPRESS_WARNING_PUSH __pragma(warning(push))
+#define ARGPARSER_MSVC_SUPPRESS_WARNING(w) __pragma(warning(disable : w))
+#define ARGPARSER_MSVC_SUPPRESS_WARNING_POP __pragma(warning(pop))
+#define ARGPARSER_MSVC_SUPPRESS_WARNING_WITH_PUSH(w) \
+  ARGPARSER_MSVC_SUPPRESS_WARNING_PUSH ARGPARSER_MSVC_SUPPRESS_WARNING(w)
+#else // ARGPARSER_MSVC
+#define ARGPARSER_MSVC_SUPPRESS_WARNING_PUSH
+#define ARGPARSER_MSVC_SUPPRESS_WARNING(w)
+#define ARGPARSER_MSVC_SUPPRESS_WARNING_POP
+#define ARGPARSER_MSVC_SUPPRESS_WARNING_WITH_PUSH(w)
+#endif // ARGPARSER_MSVC
+
+/** @} */
 
 //-----------------------------------------------------------------------------
 // [SECTION] Import/Export
@@ -250,6 +468,10 @@ typedef enum ArgumentType
  */
 typedef enum ArgumentErrorType
 {
+  /**
+   * @name Argparser error types
+   * @{
+   */
 
   UKNOWN = -1,
   MAP,        /**< Errors in map lookups */
@@ -260,6 +482,8 @@ typedef enum ArgumentErrorType
   REQUIRED,   /**< Errors that when a required flag is omitted */
   VALIDATION, /**< Errors that are detected from group validation after parsing finishes */
   COMPLETION, /**< An exception that contains autocompletion reply */
+
+  /** @} */
 
 } ArgumentErrorType;
 
@@ -295,6 +519,22 @@ typedef struct ArgumentError_t
 typedef struct Argument
 {
 } Argument;
+
+/** @} */
+
+/**
+ * @name Namespace data type
+ * @{
+ */
+
+/**
+ * @struct Namespace
+ * @brief Represents a namespace.
+ * @details Simple struct used for storing attributes.
+ */
+typedef struct Namespace
+{
+} Namespace;
 
 /** @} */
 
@@ -371,11 +611,6 @@ class ArgumentError : public std::exception
 {
 public:
   /**
-   * @brief Default constructor.
-   */
-  ArgumentError();
-
-  /**
    * @brief Constructs an exception with a specific error type.
    * @param type The type of the error.
    */
@@ -401,6 +636,36 @@ public:
 
 private:
   ArgumentError_t m_Error; /**< The error type. */
+};
+
+/** Errors that occur during usage
+ */
+class UsageError : public ArgumentError
+{
+public:
+  UsageError(ArgumentError_t error)
+      : ArgumentError(error) {};
+  virtual ~UsageError() {}
+};
+
+/** Errors that occur during regular parsing
+ */
+class ParseError : public ArgumentError
+{
+public:
+  ParseError(ArgumentError_t error)
+      : ArgumentError(error) {};
+  virtual ~ParseError() {}
+};
+
+/** Errors that when a required flag is omitted
+ */
+class RequiredError : public ArgumentError
+{
+public:
+  RequiredError(ArgumentError_t error)
+      : ArgumentError(error) {};
+  virtual ~RequiredError() {};
 };
 
 #endif //__cplusplus
@@ -516,11 +781,6 @@ extern "C"
 //-----------------------------------------------------------------------------
 
 #ifdef __cplusplus
-
-ArgumentError::ArgumentError()
-{
-  m_Error = {.type = UKNOWN, .message = "UKNOWN"};
-};
 
 ArgumentError::ArgumentError(ArgumentError_t error)
 {
