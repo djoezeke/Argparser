@@ -13,32 +13,32 @@
  */
 int main(int argc, char *argv[])
 {
-    Argparser argparser;
+    ArgumentParser_t argparser;
 
     // Initialize the argparser with program details and add a help flag automatically
     // init_parser(&argparser, "my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message");
 
-    parser(&argparser, "%p %u %d %e %D %c", "my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", "--log", '-');
+    ArgumentParserInit(&argparser, "my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message");
 
     // Add flag arguments
-    add_flag(&argparser, 'v', "verbose", "Enable verbose mode");
-    add_flag(&argparser, 's', "store", "Save file Name");
+    ArgumentParserAddFlag(&argparser, 'v', "verbose", "Enable verbose mode");
+    ArgumentParserAddFlag(&argparser, 's', "store", "Save file Name");
 
     // Add keyword argument
-    add_kwarg(&argparser, 'c', "count", 0, NULL, "Number of times");
+    ArgumentParserAddKwarg(&argparser, 'c', "count", 0, NULL, "Number of times");
 
     // Parse the command-line arguments
-    parse_args(&argparser, argc, argv);
+    ArgumentParserParseArgs(&argparser, argc, argv);
 
     // Retrieve the values of the arguments
-    int verbose = get_flag(&argparser, "verbose");
-    int store = get_flag(&argparser, "store");
-    int help = get_flag(&argparser, "help");
-    const char *count = get_kwarg(&argparser, "count");
+    int verbose = ArgumentParserGetFlag(&argparser, "verbose");
+    int store = ArgumentParserGetFlag(&argparser, "store");
+    int help = ArgumentParserGetFlag(&argparser, "help");
+    const char *count = ArgumentParserGetKwarg(&argparser, "count");
 
     // Print the help message if the help flag is set
     if (help)
-        print_help(&argparser, 1, 1, 1, 1);
+        ArgumentParserPrintHelp(&argparser);
 
     // Print the values of the arguments
     if (count)
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
         printf("Verbose: %d\n", verbose);
 
     // Free the memory allocated for the argparser
-    free_parser(&argparser);
+    ArgumentParserFree(&argparser);
 
     return 0;
 }

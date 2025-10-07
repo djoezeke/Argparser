@@ -45,26 +45,26 @@
  * int main(int argc, char *argv[]) {
  *     Argparser *parser = new_parser("my_program", "Usage: my_program
  * [options]", "This is a sample program.", "Epilog message", 1);
- *     add_arg(parser, 'o', "output", 1, 1, "default_output.txt", "Output
- * file"); add_kwarg(parser, 'v', "verbose", 0, "false", "Enable verbose mode");
- *     add_flag(parser, 'h', "help", "Show help message");
+ *     ArgumentParserAddArg(parser, 'o', "output", 1, 1, "default_output.txt", "Output
+ * file"); ArgumentParserAddKwarg(parser, 'v', "verbose", 0, "false", "Enable verbose mode");
+ *     ArgumentParserAddFlag(parser, 'h', "help", "Show help message");
  *
- *     parse_args(parser, argc, argv);
+ *     ArgumentParserParseArgs(parser, argc, argv);
  *
- *     const char *output = get_arg(parser, "output");
- *     const char *verbose = get_kwarg(parser, "verbose");
- *     int help = get_flag(parser, "help");
+ *     const char *output = ArgumentParserGetArg(parser, "output");
+ *     const char *verbose = ArgumentParserGetKwarg(parser, "verbose");
+ *     int help = ArgumentParserGetFlag(parser, "help");
  *
  *     if (help) {
- *         print_help(parser, 1, 1, 1, 0);
- *         free_parser(parser);
+ *         ArgumentParserPrintHelp(parser);
+ *         ArgumentParserFree(parser);
  *         return 0;
  *     }
  *
  *     printf("Output: %s\n", output);
  *     printf("Verbose: %s\n", verbose);
  *
- *     free_parser(parser);
+ *     ArgumentParserFree(parser);
  *     return 0;
  * }
  * @endcode
@@ -158,6 +158,7 @@
 
 #include <exception>
 #include <iostream>
+#include <unordered_map>
 
 #endif //__cplusplus
 
@@ -170,13 +171,13 @@
 
 #ifndef ARGPARSER_THEMED_PRINT
 
-#define ST "\e[0;32m" // symbol
+#define ST "\e[0;30m" // symbol
 #define NT "\e[0;30m" // name
-#define RT "\e[0;33m" // required
-#define DT "\e[0;33m" // default
+#define RT "\e[0;30m" // required
+#define DT "\e[0;30m" // default
 #define FT "\e[0;30m" // allowed
 #define FT "\e[0;30m" // implicit
-#define CC "\e[0;34m" // colon
+#define CC "\e[0;30m" // colon
 #define NC "\e[0;30m" // none
 #define HT "\e[0;30m" //
 
@@ -351,6 +352,10 @@
 
 /** @} */
 
+//-----------------------------------------------------------------------------
+// [SECTION] Warnings
+//-----------------------------------------------------------------------------
+
 /**
  * @defgroup compiler Compiler Warnings
  * @{
@@ -516,40 +521,48 @@ typedef struct ArgumentError_t
  * @brief Represents an argument.
  * @details Used to store any Argument, including flag,kwargs and args.
  */
-typedef struct Argument
+typedef struct Argument_t
 {
-} Argument;
+  ArgumentType type; /**< The type of the argument (FLAG, KWARG, ARG). */
+  char *def_val;     /**< The default value for the argument. */
+  int required;      /**< Whether the argument is required. */
+  char *help;        /**< The help message for the argument. */
+  char *name;        /**< The name of the argument. */
+  int count;         /**< The number of arguments expected. */
+  char sym;          /**< The short symbol for the argument. */
+  union
+  {
+    char *value;   /**< The value of the argument. */
+    char **values; /**< The values of the argument if multiple. */
+  };
+
+} Argument_t;
 
 /** @} */
 
 /**
- * @name Namespace data type
+ * @name ArgumentParser_t data type
  * @{
  */
 
 /**
- * @struct Namespace
- * @brief Represents a namespace.
- * @details Simple struct used for storing attributes.
- */
-typedef struct Namespace
-{
-} Namespace;
-
-/** @} */
-
-/**
- * @name Argparser_t data type
- * @{
- */
-
-/**
- * @struct Argparser_t
+ * @struct ArgumentParser_t
  * @brief Represents the Argument parser.
  */
-typedef struct Argparser_t
+typedef struct ArgumentParser_t
 {
-} Argparser_t;
+  char *program;         /**< The name of the program. */
+  char *usage;           /**< The usage message. */
+  char *epilog;          /**< The epilog message. */
+  int count;             /**< The number of arguments. */
+  char *description;     /**< The description of the program. */
+  Argument_t *arguments; /**< The list of arguments. */
+  char prefix_char;      /**< The prefix character. */
+  const char *argument_default;
+  bool add_help;
+  bool allow_abbrev;
+  bool exit_on_error;
+} ArgumentParser_t;
 
 /** @} */
 
@@ -564,34 +577,160 @@ extern "C"
 {
 #endif //__cplusplus
 
-  ARGPARSER_API Argparser_t *ArgumentParserInit(const char *, ...);
+  /**
+   * Initializes an ArgumentParser instance.
+   *
+   * @param parser The ArgumentParser to initialize.
+   * @param program The name of the program.
+   * @param usage The usage message.
+   * @param description The description of the program.
+   * @param epilog The epilog message.
+   * @param add_help Whether to add a help flag automatically.
+   *
+   * Example usage:
+   * @code
+   * ArgumentParser parser;
+   * ArgumentParserInit(&parser, "my_program", "Usage: my_program [options]", "This is a sample program.", "Epilog message", 1);
+   * @endcode
+   */
+  ARGPARSER_API void ArgumentParserInit(ArgumentParser_t *, const char *, const char *, const char *, const char *);
 
   /**
-   * @brief Destroy and free an Argprser.
-   * @param argparser The Argparser to destory.
+   * Frees the memory allocated for the ArgumentParser instance.
+   *
+   * @param parser The ArgumentParser instance.
+   *
+   * Example usage:
+   * ArgumentParserFree(parser);
    */
-  ARGPARSER_API void ArgumentParserFree(Argparser_t *);
+  ARGPARSER_API void ArgumentParserFree(ArgumentParser_t *);
+
+  /**
+   * Adds an argument to the argument parser.
+   *
+   * @param parser The ArgumentParser to add the argument to.
+   * @param sym The short symbol for the argument.
+   * @param name The long name for the argument.
+   * @param required Whether the argument is required.
+   * @param nargs The number of arguments expected.
+   * @param default_value The default value for the argument.
+   * @param help The help message for the argument.
+   *
+   * Example usage:
+   * ArgumentParserAddArg(parser, 'o', "output", 1, 1, "default_output.txt", "Output file");
+   */
+  ARGPARSER_API void ArgumentParserAddArg(ArgumentParser_t *, char, const char *, int, int, const char *, const char *);
+
+  /**
+   * Adds a keyword argument to the argument parser.
+   *
+   * @param parser The ArgumentParser to add the argument to.
+   * @param sym The short symbol for the argument.
+   * @param name The long name for the argument.
+   * @param required Whether the argument is required.
+   * @param default_value The default value for the argument.
+   * @param help The help message for the argument.
+   *
+   * Example usage:
+   * ArgumentParserAddKwarg(parser, 'v', "verbose", 0, "false", "Enable verbose mode");
+   */
+  ARGPARSER_API void ArgumentParserAddKwarg(ArgumentParser_t *, char, const char *, int, const char *, const char *);
+
+  /**
+   * Adds a flag argument to the argument parser.
+   *
+   * @param parser The ArgumentParser to add the argument to.
+   * @param sym The short symbol for the argument.
+   * @param name The long name for the argument.
+   * @param help The help message for the argument.
+   *
+   * Example usage:
+   * ArgumentParserAddFlag(parser, 'h', "help", "Show help message");
+   */
+  ARGPARSER_API void ArgumentParserAddFlag(ArgumentParser_t *, char, const char *, const char *);
+
+  /**
+   * Parses the command-line arguments.
+   *
+   * @param parser The ArgumentParser instance.
+   * @param argc The argument count.
+   * @param argv The argument vector.
+   *
+   * Example usage:
+   * ArgumentParserParseArgs(parser, argc, argv);
+   */
+  ARGPARSER_API void ArgumentParserParseArgs(ArgumentParser_t *, int, char **);
+
+  /**
+   * Retrieves the value of an argument.
+   *
+   * @param parser The ArgumentParser instance.
+   * @param name The name of the argument.
+   * @return The value of the argument.
+   *
+   * Example usage:
+   * const char *output = ArgumentParserGetArg(parser, "output");
+   */
+  ARGPARSER_API const char *ArgumentParserGetArg(ArgumentParser_t *, const char *);
+
+  /**
+   * Retrieves the value of a keyword argument.
+   *
+   * @param parser The ArgumentParser instance.
+   * @param name The name of the keyword argument.
+   * @return The value of the keyword argument.
+   *
+   * Example usage:
+   * const char *verbose = ArgumentParserGetKwarg(parser, "verbose");
+   */
+  ARGPARSER_API const char *ArgumentParserGetKwarg(ArgumentParser_t *, const char *);
+
+  /**
+   * Retrieves the value of a flag argument.
+   *
+   * @param parser The ArgumentParser instance.
+   * @param name The name of the flag argument.
+   * @return The value of the flag argument.
+   *
+   * Example usage:
+   * int help = ArgumentParserGetFlag(parser, "help");
+   */
+  ARGPARSER_API int ArgumentParserGetFlag(ArgumentParser_t *, const char *);
+
+  /**
+   * Prints the help message.
+   *
+   * @param parser The ArgumentParser instance.
+   * @param description Whether to print the description.
+   * @param usage Whether to print the usage.
+   * @param epilog Whether to print the epilog.
+   * @param group Whether
+   *
+   * Example usage:
+   * ArgumentParserPrintHelp(parser);
+   */
+  ARGPARSER_API void ArgumentParserPrintHelp(ArgumentParser_t *);
 
   /**
    * @brief Gets the error arg.
    * @param[in] error The error.
    * @return The error argument.
    */
-  ARGPARSER_API const char *arg(ArgumentError_t *error);
+  ARGPARSER_API const char *ArgumetParserErrorArg(ArgumentError_t *);
 
   /**
    * @brief Gets the error message.
    * @param[in] error The error.
    * @return The error message.
    */
-  ARGPARSER_API const char *what(ArgumentError_t *error);
+  ARGPARSER_API const char *ArgumetParserErrorWhat(ArgumentError_t *);
 
   /**
    * @brief Gets the error type.
    * @param[in] error The error.
    * @return The error type.
    */
-  ARGPARSER_API ArgumentErrorType type(ArgumentError_t *error);
+  ARGPARSER_API ArgumentErrorType ArgumetParserErrorType(ArgumentError_t *);
 
 #ifdef __cplusplus
 }
@@ -602,71 +741,75 @@ extern "C"
 //-----------------------------------------------------------------------------
 // [SECTION] C++ Only Classes
 //-----------------------------------------------------------------------------
-
-/**
- * @class ArgumentError
- * @brief ArgumentError class for Argument-related errors.
- */
-class ArgumentError : public std::exception
+namespace argparser
 {
-public:
-  /**
-   * @brief Constructs an exception with a specific error type.
-   * @param type The type of the error.
-   */
-  ArgumentError(ArgumentError_t type);
 
   /**
-   * @brief Gets the error arg.
-   * @return The error argument.
+   * @class ArgumentError
+   * @brief ArgumentError class for Argument-related errors.
    */
-  const char *arg() const noexcept;
+  class ArgumentError : public std::exception
+  {
+  public:
+    /**
+     * @brief Constructs an exception with a specific error type.
+     * @param type The type of the error.
+     */
+    ArgumentError(ArgumentError_t type);
 
-  /**
-   * @brief Gets the error message.
-   * @return The error message.
+    /**
+     * @brief Gets the error arg.
+     * @return The error argument.
+     */
+    const char *arg() const noexcept;
+
+    /**
+     * @brief Gets the error message.
+     * @return The error message.
+     */
+    const char *what() const noexcept override;
+
+    /**
+     * @brief Gets the error type.
+     * @return The error type.
+     */
+    ArgumentErrorType type() const noexcept;
+
+  private:
+    ArgumentError_t m_Error; /**< The error type. */
+  };
+
+  /** Errors that occur during usage
    */
-  const char *what() const noexcept override;
+  class UsageError : public ArgumentError
+  {
+  public:
+    UsageError(ArgumentError_t error)
+        : ArgumentError(error) {};
+    virtual ~UsageError() {}
+  };
 
-  /**
-   * @brief Gets the error type.
-   * @return The error type.
+  /** Errors that occur during regular parsing
    */
-  ArgumentErrorType type() const noexcept;
+  class ParseError : public ArgumentError
+  {
+  public:
+    ParseError(ArgumentError_t error)
+        : ArgumentError(error) {};
+    virtual ~ParseError() {}
+  };
 
-private:
-  ArgumentError_t m_Error; /**< The error type. */
-};
+  /** Errors that when a required flag is omitted
+   */
+  class RequiredError : public ArgumentError
+  {
+  public:
+    RequiredError(ArgumentError_t error)
+        : ArgumentError(error) {};
+    virtual ~RequiredError() {};
+  };
 
-/** Errors that occur during usage
- */
-class UsageError : public ArgumentError
-{
-public:
-  UsageError(ArgumentError_t error)
-      : ArgumentError(error) {};
-  virtual ~UsageError() {}
-};
-
-/** Errors that occur during regular parsing
- */
-class ParseError : public ArgumentError
-{
-public:
-  ParseError(ArgumentError_t error)
-      : ArgumentError(error) {};
-  virtual ~ParseError() {}
-};
-
-/** Errors that when a required flag is omitted
- */
-class RequiredError : public ArgumentError
-{
-public:
-  RequiredError(ArgumentError_t error)
-      : ArgumentError(error) {};
-  virtual ~RequiredError() {};
-};
+}; // namespace argparser
 
 #endif //__cplusplus
 
@@ -697,6 +840,12 @@ extern "C"
   // [SECTION] Declarations
   //-----------------------------------------------------------------------------
 
+  ARGPARSER_API void _ArgumentParserPrintArgHelp(ArgumentParser_t *, int);
+
+  ARGPARSER_API void _ArgumentParserPrintFlagHelp(ArgumentParser_t *, int);
+
+  ARGPARSER_API void _ArgumentParserPrintKwargHelp(ArgumentParser_t *, int);
+
   /**
    * @brief Constructs an exception with a specific message and error type.
    * @param type The type of the error.
@@ -714,6 +863,29 @@ extern "C"
   //-----------------------------------------------------------------------------
   // [SECTION] Definations
   //-----------------------------------------------------------------------------
+
+  ARGPARSER_API void _ArgumentParserPrintArgHelp(ArgumentParser_t *parser, int i)
+  {
+    printf("-%c --%s ", parser->arguments[i].sym ? parser->arguments[i].sym : ' ', parser->arguments[i].name);
+    printf("(required: %d , [%s] ) ", parser->arguments[i].required, parser->arguments[i].def_val ? parser->arguments[i].def_val : "None");
+    printf("= %s \n", parser->arguments[i].help ? parser->arguments[i].help : "No description");
+  };
+
+  ARGPARSER_API void _ArgumentParserPrintFlagHelp(ArgumentParser_t *parser, int i)
+  {
+    printf("-" FT "%c" NC "--" NT "%s " NC, parser->arguments[i].sym ? parser->arguments[i].sym : '\0', parser->arguments[i].name);
+    printf(CC ":" NC HT "%s" NC "\n", parser->arguments[i].help ? parser->arguments[i].help : "");
+  };
+
+  ARGPARSER_API void _ArgumentParserPrintKwargHelp(ArgumentParser_t *parser, int i)
+  {
+    printf("-" FT "%c" NC "--" NT "%s " NC, parser->arguments[i].sym ? parser->arguments[i].sym : '\0', parser->arguments[i].name);
+    printf(CC ":" NC HT "%s" NC, parser->arguments[i].help ? parser->arguments[i].help : "");
+
+    printf("[" NC HT "%s" NC, parser->arguments[i].help ? parser->arguments[i].help : "");
+
+    printf("[" NC "required " NC CC ": " NC " %d , [%s] ) ", parser->arguments[i].required, parser->arguments[i].def_val ? parser->arguments[i].def_val : "");
+  };
 
   ARGPARSER_API ArgumentError_t _ArgumentErrorInit(ArgumentErrorType type, const char *message, const char *arg)
   {
@@ -757,17 +929,327 @@ extern "C"
 {
 #endif // __cplusplus
 
-  ARGPARSER_API const char *arg(ArgumentError_t *error)
+  ARGPARSER_API void ArgumentParserInit(ArgumentParser_t *parser, const char *program, const char *usage, const char *description, const char *epilog)
+  {
+    parser->program = strdup(program);
+    parser->usage = strdup(usage);
+    parser->description = strdup(description);
+    parser->epilog = strdup(epilog);
+    parser->arguments = NULL;
+    parser->count = 0;
+    parser->prefix_char = '-';
+    parser->add_help = true;
+    parser->allow_abbrev = true;
+    parser->exit_on_error = true;
+
+    if (parser->add_help)
+    {
+      ArgumentParserAddFlag(parser, 'h', "help", "Shows this help Menu");
+    }
+  }
+
+  ARGPARSER_API void ArgumentParserFree(ArgumentParser_t *parser)
+  {
+    if (!parser)
+      return;
+
+    for (int i = 0; i < parser->count; i++)
+    {
+      free(parser->arguments[i].name);
+      if (parser->arguments[i].help)
+        free(parser->arguments[i].help);
+      if (parser->arguments[i].def_val)
+        free(parser->arguments[i].def_val);
+      if (parser->arguments[i].type == ARG || parser->arguments[i].type == KWARG)
+      {
+        if (parser->arguments[i].count == 1)
+        {
+          if (parser->arguments[i].value)
+            free(parser->arguments[i].value);
+        }
+        else
+        {
+          if (parser->arguments[i].values)
+          {
+            for (size_t j = 0; j < parser->arguments[i].count; j++)
+            {
+              if (parser->arguments[i].values[j])
+                free(parser->arguments[i].values[j]);
+            }
+            free(parser->arguments[i].values); // Free the values array itself
+          }
+        }
+      }
+    }
+    free(parser->arguments);
+
+    if (parser->program)
+      free(parser->program);
+    if (parser->usage)
+      free(parser->usage);
+    if (parser->description)
+      free(parser->description);
+    if (parser->epilog)
+      free(parser->epilog);
+  }
+
+  ARGPARSER_API void ArgumentParserAddArg(ArgumentParser_t *parser, char sym, const char *name, int required, int nargs, const char *default_value, const char *help)
+  {
+    parser->arguments = (Argument_t *)realloc(parser->arguments, sizeof(Argument_t) * (parser->count + 1));
+    parser->arguments[parser->count].name = strdup(name);
+    parser->arguments[parser->count].required = required;
+    parser->arguments[parser->count].def_val = default_value ? strdup(default_value) : NULL;
+    parser->arguments[parser->count].value = NULL;
+    parser->arguments[parser->count].sym = sym ? sym : '0';
+    parser->arguments[parser->count].help = help ? strdup(help) : NULL;
+    parser->arguments[parser->count].type = ARG;
+    parser->arguments[parser->count].count = nargs;
+    parser->count++;
+  }
+
+  ARGPARSER_API void ArgumentParserAddKwarg(ArgumentParser_t *parser, char sym, const char *name, int required, const char *default_value, const char *help)
+  {
+    parser->arguments = (Argument_t *)realloc(parser->arguments, sizeof(Argument_t) * (parser->count + 1));
+    parser->arguments[parser->count].name = strdup(name);
+    parser->arguments[parser->count].required = required;
+    parser->arguments[parser->count].def_val = default_value ? strdup(default_value) : NULL;
+    parser->arguments[parser->count].value = NULL;
+    parser->arguments[parser->count].sym = sym ? sym : '0';
+    parser->arguments[parser->count].help = help ? strdup(help) : NULL;
+    parser->arguments[parser->count].type = KWARG;
+    parser->count++;
+  }
+
+  ARGPARSER_API void ArgumentParserAddFlag(ArgumentParser_t *parser, char sym, const char *name, const char *help)
+  {
+    parser->arguments = (Argument_t *)realloc(parser->arguments, sizeof(Argument_t) * (parser->count + 1));
+    parser->arguments[parser->count].name = strdup(name);
+    parser->arguments[parser->count].required = 0;
+    parser->arguments[parser->count].def_val = NULL;
+    parser->arguments[parser->count].value = NULL;
+    parser->arguments[parser->count].sym = sym ? sym : '0';
+    parser->arguments[parser->count].help = help ? strdup(help) : NULL;
+    parser->arguments[parser->count].type = FLAG;
+    parser->count++;
+  }
+
+  ARGPARSER_API void ArgumentParserParseArgs(ArgumentParser_t *parser, int argc, char *argv[])
+  {
+    for (int i = 1; i < argc; i++)
+    {
+      if (strncmp(argv[i], "--", 2) == 0)
+      {
+        char *arg = argv[i] + 2;
+        char *value = strchr(arg, '=');
+        if (value)
+        {
+          *value = '\0';
+          value++;
+        }
+        else
+        {
+          value = NULL;
+        }
+        for (int j = 0; j < parser->count; j++)
+        {
+          if (strcmp(parser->arguments[j].name, arg) == 0)
+          {
+            parser->arguments[j].value = strdup(value);
+            break;
+          }
+        }
+        for (size_t j = 0; j < parser->count; j++)
+        {
+          if (strcmp(parser->arguments[j].name, arg) == 0 && parser->arguments[j].type == FLAG)
+          {
+            parser->arguments[j].value = strdup("true");
+            break;
+          }
+          else if (strcmp(parser->arguments[j].name, arg) == 0 && parser->arguments[j].type == KWARG)
+          {
+            parser->arguments[j].value = strdup(value);
+            break;
+          }
+        }
+      }
+
+      // for -o -i -s=hello or -ois=hello
+      else if (strncmp(argv[i], "-", 1) == 0)
+      {
+        char *arg = argv[i] + 1;
+        char *value = strchr(arg, '=');
+        if (value)
+        {
+          *value = '\0';
+          value++;
+        }
+        else
+        {
+          value = NULL;
+        }
+        if (arg)
+        {
+          for (size_t j = 0; j < strlen(arg); j++)
+          {
+            for (size_t k = 0; k < parser->count; k++)
+            {
+              if (parser->arguments[k].sym == arg[j] && parser->arguments[k].type == FLAG)
+              {
+                parser->arguments[k].value = strdup("true");
+                break;
+              }
+              else if (parser->arguments[k].sym == arg[j] && parser->arguments[k].type == KWARG)
+              {
+                parser->arguments[k].value = strdup(value);
+                break;
+              }
+            }
+          }
+        }
+      }
+      else
+      {
+        char *arg = argv[i];
+        char *value = strchr(arg, '=');
+        if (value)
+        {
+          *value = '\0';
+          value++;
+        }
+        else
+        {
+          value = NULL;
+        }
+        printf("%s", arg);
+        for (int j = 0; j < parser->count; j++)
+        {
+          if (strcmp(parser->arguments[j].name, arg) == 0)
+          {
+            parser->arguments[j].value = strdup(value);
+            break;
+          }
+        }
+        for (size_t j = 0; j < parser->count; j++)
+        {
+          if (strcmp(parser->arguments[j].name, arg) == 0 && parser->arguments[j].type == FLAG)
+          {
+            parser->arguments[j].value = strdup("true");
+            break;
+          }
+          else if (strcmp(parser->arguments[j].name, arg) == 0 && parser->arguments[j].type == KWARG)
+          {
+            parser->arguments[j].value = strdup(value);
+            break;
+          }
+        }
+      }
+    }
+
+    for (int i = 0; i < parser->count; i++)
+    {
+      if (parser->arguments[i].required && !parser->arguments[i].value)
+      {
+        fprintf(stderr, "Missing required argument: %s\n", parser->arguments[i].name);
+        exit(EXIT_FAILURE);
+      }
+      if (!parser->arguments[i].value)
+      {
+        parser->arguments[i].value = parser->arguments[i].def_val;
+      }
+    }
+  }
+
+  ARGPARSER_API const char *ArgumentParserGetArg(ArgumentParser_t *parser, const char *name)
+  {
+    for (int i = 0; i < parser->count; i++)
+    {
+      if (strcmp(parser->arguments[i].name, name) == 0)
+      {
+        if (parser->arguments[i].type == ARG)
+
+          if (parser->arguments[i].value != NULL)
+            return parser->arguments[i].value;
+          else
+            return parser->arguments[i].def_val;
+        else
+          return NULL;
+      }
+    }
+    return NULL;
+  }
+
+  ARGPARSER_API const char *ArgumentParserGetKwarg(ArgumentParser_t *parser, const char *name)
+  {
+    for (int i = 0; i < parser->count; i++)
+    {
+      if (strcmp(parser->arguments[i].name, name) == 0)
+      {
+        if (parser->arguments[i].type == KWARG)
+
+          if (parser->arguments[i].value != NULL)
+            return parser->arguments[i].value;
+          else
+            return parser->arguments[i].def_val;
+        else
+          return NULL;
+      }
+    }
+    return NULL;
+  }
+
+  ARGPARSER_API int ArgumentParserGetFlag(ArgumentParser_t *parser, const char *name)
+  {
+    for (int i = 0; i < parser->count; i++)
+    {
+      if (strcmp(parser->arguments[i].name, name) == 0)
+      {
+        if (parser->arguments[i].type == FLAG)
+          if (parser->arguments[i].value != NULL)
+            return 1;
+          else
+            return 0;
+        else
+          return 0;
+      }
+    }
+    return 0;
+  }
+
+  ARGPARSER_API void ArgumentParserPrintHelp(ArgumentParser_t *parser)
+  {
+    if (parser == NULL)
+    {
+      return;
+    }
+
+    for (int i = 0; i < parser->count; i++)
+    {
+      if (parser->arguments[i].type == FLAG)
+      {
+        _ArgumentParserPrintFlagHelp(parser, i);
+      }
+      else if (parser->arguments[i].type == KWARG)
+      {
+        _ArgumentParserPrintKwargHelp(parser, i);
+      }
+      else
+      {
+        _ArgumentParserPrintArgHelp(parser, i);
+      }
+    }
+  }
+
+  ARGPARSER_API const char *ArgumetParserErrorArg(ArgumentError_t *error)
   {
     return error->arg;
   };
 
-  ARGPARSER_API const char *what(ArgumentError_t *error)
+  ARGPARSER_API const char *ArgumetParserErrorWhat(ArgumentError_t *error)
   {
     return error->message;
   };
 
-  ARGPARSER_API ArgumentErrorType type(ArgumentError_t *error)
+  ARGPARSER_API ArgumentErrorType ArgumetParserErrorType(ArgumentError_t *error)
   {
     return error->type;
   };
